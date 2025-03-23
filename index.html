@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+    <meta charset="utf-8">
+
+<head>
+  <title>Змейка</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bytesized&display=swap');
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      border: 1px solid white;
+    }
+
+    #loseMessage {
+      display: none;
+      color: white;
+      font-size: 24px;
+      font-family: 'Bytesized', sans-serif;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="game"></canvas>
+  <div id="score" style="color: white; font-size: 20px; font-family: 'Bytesized', sans-serif; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);">Score: 0</div>
+  <div id="loseMessage">You lose</div>
+  <script>
+    const canvas = document.getElementById('game');
+    const context = canvas.getContext('2d');
+    const grid = 16;
+    let count = 0, score = 0, isGameRunning = true;
+
+    const canvasSize = Math.min(window.innerWidth, window.innerHeight) - 20;
+    canvas.width = canvasSize - (canvasSize % grid);
+    canvas.height = canvasSize - (canvasSize % grid);
+
+    const snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+    const apple = { x: 320, y: 320 };
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    function resetGame() {
+      isGameRunning = false;
+      snake.x = 160;
+      snake.y = 160;
+      snake.cells = [];
+      snake.maxCells = 4;
+      snake.dx = grid;
+      snake.dy = 0;
+      apple.x = getRandomInt(0, canvas.width / grid) * grid;
+      apple.y = getRandomInt(0, canvas.height / grid) * grid;
+      score = 0;
+      document.getElementById('score').textContent = 'Score: ' + score;
+      document.getElementById('loseMessage').style.display = 'none';
+
+      setTimeout(() => {
+        isGameRunning = true;
+        requestAnimationFrame(loop);
+      }, 2000);
+    }
+
+    function loop() {
+      if (!isGameRunning) return;
+
+      requestAnimationFrame(loop);
+      if (++count < 6) return;
+      count = 0;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      snake.x += snake.dx;
+      snake.y += snake.dy;
+
+      if (snake.x < 0 || snake.x >= canvas.width || snake.y < 0 || snake.y >= canvas.height) {
+        document.getElementById('loseMessage').style.display = 'block';
+        isGameRunning = false;
+        resetGame();
+        return;
+      }
+
+      snake.cells.unshift({ x: snake.x, y: snake.y });
+      if (snake.cells.length > snake.maxCells) snake.cells.pop();
+
+      context.fillStyle = 'red';
+      context.fillRect(apple.x, apple.y, grid - 1, grid - 1);
+
+      context.fillStyle = 'green';
+      snake.cells.forEach((cell, index) => {
+        context.fillRect(cell.x, cell.y, grid - 1, grid - 1);
+        if (cell.x === apple.x && cell.y === apple.y) {
+          snake.maxCells++;
+          score++;
+          document.getElementById('score').textContent = 'Score: ' + score;
+          apple.x = getRandomInt(0, canvas.width / grid) * grid;
+          apple.y = getRandomInt(0, canvas.height / grid) * grid;
+        }
+        for (let i = index + 1; i < snake.cells.length; i++) {
+          if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+            document.getElementById('loseMessage').style.display = 'block';
+            isGameRunning = false;
+            resetGame();
+          }
+        }
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+      else if (e.key === 'ArrowUp' && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+      else if (e.key === 'ArrowRight' && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+      else if (e.key === 'ArrowDown' && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+    });
+    
+    let touchStartX = 0, touchStartY = 0;
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    });
+    document.addEventListener('touchmove', (e) => {
+      const touchEndX = e.touches[0].clientX;
+      const touchEndY = e.touches[0].clientY;
+      const dx = touchEndX - touchStartX;
+      const dy = touchEndY - touchStartY;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+        else if (dx < 0 && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+      } else {
+        if (dy > 0 && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+        else if (dy < 0 && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+      }
+    });
+
+    requestAnimationFrame(loop);
+
+    // написано великим апиратором кривыми руками
+  </script>
+</body>
+
+</html>
